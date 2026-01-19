@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Builder</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Form Builder</h1>
+        <div class="form-section">
+            <label for="title">Form Title:</label>
+            <input type="text" id="title" placeholder="Enter form title">
+            
+            <label for="description">Description:</label>
+            <textarea id="description" placeholder="Enter description"></textarea>
+            
+            <label for="timer">Timer (minutes):</label>
+            <input type="number" id="timer" min="1" placeholder="e.g., 10">
+            
+            <h2>Questions</h2>
+            <div id="questions"></div>
+            <button id="add-question">Add Question</button>
+            
+            <button id="generate-link">Generate Shareable Link</button>
+            <div id="link-output"></div>
+        </div>
+    </div>
+    <script src="builder.js"></script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creator Response Viewer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Form Responses Viewer</h1>
+        <p>Enter your Creator ID to view submissions and events:</p>
+        <input type="text" id="creator-id-input" placeholder="e.g., creator_12345">
+        <button id="load-responses">Load Responses</button>
+        <div id="responses-display"></div>
+    </div>
+
+    <script>
+        document.getElementById('load-responses').addEventListener('click', () => {
+            const creatorId = document.getElementById('creator-id-input').value;
+            if (!creatorId) {
+                alert('Please enter a Creator ID.');
+                return;
+            }
+            const storageKey = `formData_${creatorId}`;
+            const storedData = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            const display = document.getElementById('responses-display');
+
+            if (storedData.length === 0) {
+                display.innerHTML = '<p>No responses yet.</p>';
+                return;
+            }
+
+            // Create a map of sessionId to name from submissions
+            const nameMap = {};
+            storedData.forEach(item => {
+                if (item.endpoint.includes('submit') && item.data.responderName) {
+                    nameMap[item.data.sessionId] = item.data.responderName;
+                }
+            });
+
+            let html = '<h3>Submissions and Events</h3><table border="1" style="width:100%; border-collapse:collapse;"><tr><th>Type</th><th>Name</th><th>Session ID</th><th>Details</th><th>Timestamp</th></tr>';
+            storedData.forEach(item => {
+                const type = item.endpoint.includes('submit') ? 'Submission' : 'Event';
+                const style = type === 'Submission' ? 'color:green;' : 'color:red;';
+                const name = nameMap[item.data.sessionId] || 'N/A';
+                let details = '';
+                if (type === 'Submission') {
+                    details = `Score: ${item.data.score}/${item.data.totalQuestions}, Responses: ${JSON.stringify(item.data.responses)}`;
+                } else {
+                    details = `Event: ${item.data.event}`;
+                }
+                html += `<tr style="${style}"><td>${type}</td><td>${name}</td><td>${item.data.sessionId}</td><td>${details}</td><td>${item.timestamp}</td></tr>`;
+            });
+            html += '</table>';
+            display.innerHTML = html;
+        });
+    </script>
+</body>
+</html>
